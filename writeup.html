@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dark Capacity — The Write-Up</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d1520; --s1:#111d2b; --s2:#172236; --s3:#1c2a40;
+  --b1:#1a2d42; --b2:#213549; --b3:#2a4060;
+  --acc:#007BFF; --acc2:#40a0ff; --adim:rgba(0,123,255,0.10); --aglow:rgba(0,123,255,0.20);
+  --cy:#00c8d7; --cdim:rgba(0,200,215,0.10);
+  --gn:#28A745; --gdim:rgba(40,167,69,0.12);
+  --am:#f59e0b; --adm:rgba(245,158,11,0.12);
+  --pu:#8b5cf6;
+  --tx:#e8f0f8; --t2:#9ab4cc; --t3:#4d6a82; --t4:#2a3d52;
+  --serif:'DM Serif Display',serif;
+  --mono:'Space Mono',monospace;
+  --sans:'DM Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);font-size:17px;line-height:1.75;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,rgba(0,123,255,0.04) 1px,transparent 1px);background-size:36px 36px;pointer-events:none;z-index:0;}
+
+.page-wrap{position:relative;z-index:1;max-width:780px;margin:0 auto;padding:0 28px 120px;}
+
+/* STICKY THOUGHTS BUTTON */
+.thoughts-btn{position:fixed;right:28px;top:50%;transform:translateY(-50%);z-index:100;background:var(--acc);color:#fff;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;border:none;border-radius:6px;padding:12px 10px;cursor:pointer;writing-mode:vertical-rl;text-orientation:mixed;box-shadow:0 4px 24px rgba(0,123,255,0.4);transition:background .2s,box-shadow .2s;}
+.thoughts-btn:hover{background:var(--acc2);box-shadow:0 4px 32px rgba(0,123,255,0.6);}
+@media(max-width:900px){.thoughts-btn{writing-mode:horizontal-tb;top:auto;bottom:24px;right:24px;transform:none;border-radius:30px;padding:12px 20px;}}
+
+/* NAV */
+nav{display:flex;align-items:center;justify-content:space-between;padding:24px 0 20px;border-bottom:1px solid var(--b1);margin-bottom:0;}
+.nav-logo{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--acc2);}
+.nav-logo span{color:var(--t3);font-weight:400;}
+.nav-links{display:flex;gap:20px;}
+.nav-links a{font-family:var(--mono);font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:var(--t2);text-decoration:none;transition:color .18s;padding:6px 12px;border:1px solid var(--b2);border-radius:5px;}
+.nav-links a:hover{color:var(--acc2);border-color:var(--acc);background:var(--adim);}
+
+/* HERO */
+.hero{padding:80px 0 60px;}
+.hero-kicker{font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--cy);margin-bottom:24px;display:block;}
+.hero-title{font-family:var(--serif);font-size:clamp(36px,6vw,64px);line-height:1.1;margin-bottom:24px;color:var(--tx);}
+.hero-title em{font-style:italic;color:var(--acc2);}
+.hero-sub{font-size:18px;color:var(--t2);line-height:1.7;max-width:620px;margin-bottom:32px;}
+.hero-meta{display:flex;gap:24px;flex-wrap:wrap;}
+.meta-item{font-family:var(--mono);font-size:11px;color:var(--t3);}
+.meta-item strong{color:var(--t2);}
+
+/* INTERACTIVE OPENER */
+.opener-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:32px 0;}
+.opener-card{background:var(--s1);border:1px solid var(--b2);border-radius:10px;padding:20px 16px;cursor:pointer;transition:border-color .2s,background .2s;text-align:center;}
+.opener-card:hover{border-color:var(--acc);background:var(--adim);}
+.opener-card.picked{border-color:var(--cy);background:var(--cdim);}
+.opener-emoji{font-size:28px;margin-bottom:10px;display:block;}
+.opener-label{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--t3);margin-bottom:6px;}
+.opener-card.picked .opener-label{color:var(--cy);}
+.opener-desc{font-size:13px;color:var(--t2);line-height:1.5;}
+.opener-response{display:none;background:var(--s2);border:1px solid var(--b2);border-left:3px solid var(--cy);border-radius:8px;padding:20px 24px;margin-top:16px;font-size:15px;color:var(--t2);line-height:1.7;}
+.opener-response.show{display:block;}
+
+/* PULL QUOTE */
+.pullquote{font-family:var(--serif);font-size:clamp(22px,3.5vw,32px);font-style:italic;color:var(--acc2);line-height:1.4;padding:40px 0;border-top:2px solid var(--acc);border-bottom:2px solid var(--acc);margin:48px 0;}
+
+/* SECTION */
+.section{padding:38px 0;}
+.section:last-child{border-bottom:none;}
+.section-label{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--acc2);margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--b2);}
+.section-title{font-family:var(--serif);font-size:clamp(26px,4vw,40px);line-height:1.15;margin-bottom:24px;color:var(--tx);}
+.section-title em{font-style:italic;color:var(--cy);}
+
+p{margin-bottom:20px;color:var(--t2);}
+p strong{color:var(--tx);}
+p a{color:var(--acc2);text-decoration:none;border-bottom:1px solid rgba(64,160,255,0.35);}
+p a:hover{color:var(--cy);border-bottom-color:var(--cy);}
+
+/* CALLOUT */
+.callout{background:var(--s1);border:1px solid var(--b2);border-left:3px solid var(--cy);border-radius:8px;padding:20px 24px;margin:28px 0;}
+.callout p{margin-bottom:0;font-size:15px;}
+.callout.accent{border-left-color:var(--acc);}
+.callout.amber{border-left-color:var(--am);}
+
+/* FORMULA */
+.formula-block{background:var(--s2);border:1px solid var(--b2);border-radius:10px;padding:28px;margin:32px 0;font-family:var(--mono);font-size:14px;}
+.formula-line{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.formula-line:last-child{margin-bottom:0;}
+.f-val{background:var(--adim);border:1px solid rgba(0,123,255,0.2);color:var(--acc2);padding:5px 12px;border-radius:4px;white-space:nowrap;}
+.f-op{color:var(--t3);font-size:18px;}
+.f-eq{color:var(--cy);font-size:18px;font-weight:700;}
+.f-res{background:var(--cdim);border:1px solid rgba(0,200,215,0.25);color:var(--cy);padding:5px 12px;border-radius:4px;font-weight:700;}
+.formula-note{font-size:12px;color:var(--t3);margin-top:16px;line-height:1.6;}
+
+/* DATA TABLE */
+.data-table{width:100%;border-collapse:collapse;margin:28px 0;font-size:14px;}
+.data-table th{padding:10px 14px;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--t3);text-align:left;border-bottom:1px solid var(--b2);background:var(--s1);}
+.data-table td{padding:10px 14px;color:var(--t2);border-bottom:1px solid var(--b1);font-family:var(--mono);font-size:12px;}
+.data-table tr:hover td{background:var(--s1);}
+.data-table td.hl{color:var(--acc2);font-weight:700;}
+.data-table td.cy{color:var(--cy);}
+.data-table td.dim{color:var(--t3);}
+
+/* BIG NUMBERS */
+.big-number{font-family:var(--serif);font-size:clamp(48px,8vw,80px);font-weight:400;line-height:1;color:var(--acc2);display:block;margin-bottom:8px;}
+.big-number-label{font-family:var(--mono);font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--t3);}
+.numbers-row{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin:32px 0;text-align:center;}
+.num-card{background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:24px 16px;}
+@media(max-width:600px){.numbers-row{grid-template-columns:1fr;}.opener-grid{grid-template-columns:1fr;}}
+
+/* QUESTION */
+.question{font-family:var(--serif);font-size:22px;font-style:italic;color:var(--am);margin:32px 0 16px;line-height:1.4;}
+
+/* VALIDATION */
+.validation{background:var(--s1);border:1px solid var(--gn);border-radius:10px;padding:24px;margin:28px 0;}
+.val-title{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:var(--gn);margin-bottom:14px;}
+.val-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--b1);font-family:var(--mono);font-size:12px;}
+.val-row:last-child{border-bottom:none;}
+.val-badge{font-size:10px;padding:3px 8px;border-radius:3px;flex-shrink:0;margin-top:1px;}
+.val-badge.ok{background:var(--gdim);color:var(--gn);border:1px solid rgba(40,167,69,0.25);}
+.val-badge.warn{background:var(--adm);color:var(--am);border:1px solid rgba(245,158,11,0.25);}
+.val-name{color:var(--t2);flex-shrink:0;margin-right:4px;}
+.val-detail{color:var(--t3);flex:1;}
+
+/* STACK BADGES */
+.stack-row{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0;}
+.badge{font-family:var(--mono);font-size:11px;padding:5px 12px;border-radius:4px;border:1px solid var(--b2);color:var(--t2);background:var(--s1);}
+.badge.acc{border-color:rgba(0,123,255,0.3);color:var(--acc2);background:var(--adim);}
+.badge.cy{border-color:rgba(0,200,215,0.3);color:var(--cy);background:var(--cdim);}
+.badge.am{border-color:rgba(245,158,11,0.3);color:var(--am);background:var(--adm);}
+
+/* AUTHORS */
+.authors-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:32px 0;}
+@media(max-width:600px){.authors-grid{grid-template-columns:1fr;}}
+.author-card{background:var(--s1);border:1px solid var(--b2);border-radius:12px;padding:28px 24px;}
+.author-initial{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:24px;font-weight:700;margin-bottom:16px;}
+.author-initial.g{background:var(--adim);border:2px solid rgba(0,123,255,0.3);color:var(--acc2);}
+.author-initial.s{background:var(--cdim);border:2px solid rgba(0,200,215,0.3);color:var(--cy);}
+.author-name{font-family:var(--serif);font-size:22px;color:var(--tx);margin-bottom:4px;}
+.author-role{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--t3);margin-bottom:14px;}
+.author-bio{font-size:14px;color:var(--t2);line-height:1.6;margin-bottom:16px;}
+.author-links{display:flex;gap:10px;flex-wrap:wrap;}
+.author-link{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--t3);text-decoration:none;border:1px solid var(--b2);padding:5px 10px;border-radius:4px;transition:all .15s;}
+.author-link:hover{border-color:var(--acc);color:var(--acc2);}
+
+/* RESPONSES SECTION */
+.responses-section{background:var(--s1);border:1px solid var(--b2);border-radius:10px;padding:24px;margin:28px 0;}
+.responses-title{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:var(--acc2);margin-bottom:6px;}
+.responses-sub{font-size:13px;color:var(--t3);margin-bottom:20px;}
+.response-item{padding:16px 0;border-bottom:1px solid var(--b1);}
+.response-item:last-child{border-bottom:none;}
+.response-q{font-family:var(--mono);font-size:12px;color:var(--am);margin-bottom:8px;}
+.response-q span{color:var(--t3);margin-right:6px;}
+.response-a{font-size:14px;color:var(--t2);line-height:1.6;}
+.response-empty{font-family:var(--mono);font-size:12px;color:var(--t3);font-style:italic;text-align:center;padding:20px 0;}
+
+/* THOUGHTS MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(5,10,18,0.88);backdrop-filter:blur(8px);z-index:300;align-items:center;justify-content:center;padding:24px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--s1);border:1px solid var(--b2);border-radius:14px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;animation:slideUp .25s ease;}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.modal-head{padding:24px 26px 18px;border-bottom:1px solid var(--b1);display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+.modal-title{font-family:var(--serif);font-size:26px;color:var(--tx);line-height:1.2;}
+.modal-title em{font-style:italic;color:var(--acc2);}
+.modal-close{background:none;border:1px solid var(--b2);color:var(--t3);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.modal-close:hover{border-color:var(--acc);color:var(--acc2);}
+.modal-body{padding:24px 26px;}
+.modal-sub{font-size:14px;color:var(--t3);margin-bottom:20px;line-height:1.6;}
+.form-field{margin-bottom:18px;}
+.form-field label{display:block;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--t3);margin-bottom:7px;}
+.form-field input,.form-field textarea,.form-field select{width:100%;background:var(--bg);border:1px solid var(--b2);border-radius:6px;color:var(--tx);font-family:var(--sans);font-size:14px;padding:10px 14px;outline:none;transition:border-color .18s,box-shadow .18s;resize:vertical;}
+.form-field input:focus,.form-field textarea:focus,.form-field select:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--aglow);}
+.form-field textarea{min-height:120px;}
+.form-field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 5 4.5-5' stroke='%234d6a82' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer;}
+.form-field select option{background:#172236;}
+.email-note{font-size:12px;color:var(--t3);font-family:var(--mono);margin-top:6px;line-height:1.5;}
+.submit-btn{width:100%;background:var(--acc);color:#fff;font-family:var(--mono);font-size:12px;letter-spacing:0.1em;text-transform:uppercase;border:none;border-radius:7px;padding:14px;cursor:pointer;transition:background .18s,box-shadow .18s;}
+.submit-btn:hover{background:var(--acc2);box-shadow:0 4px 20px var(--aglow);}
+.submit-btn:disabled{background:var(--t3);cursor:not-allowed;}
+.success-msg{display:none;text-align:center;padding:20px;font-family:var(--mono);font-size:13px;color:var(--gn);}
+.success-msg .big{font-size:32px;display:block;margin-bottom:8px;}
+
+/* POSTIT BOARD */
+.postit-board-title{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--t3);margin:20px 0 12px;}
+.postit-board{max-height:300px;overflow-y:auto;}
+.postit{background:var(--s2);border:1px solid var(--b2);border-radius:8px;padding:12px 14px;margin-bottom:10px;}
+.postit:last-child{margin-bottom:0;}
+.postit.new{border-color:var(--acc);}
+.postit-name{font-family:var(--mono);font-size:10px;color:var(--acc2);margin-bottom:3px;}
+.postit-type{font-family:var(--mono);font-size:9px;color:var(--t3);margin-bottom:6px;}
+.postit-body{font-size:13px;color:var(--t2);line-height:1.5;}
+.postit-time{font-family:var(--mono);font-size:9px;color:var(--t4);margin-top:6px;}
+.no-thoughts{font-family:var(--mono);font-size:12px;color:var(--t3);text-align:center;padding:20px 0;font-style:italic;}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.section{animation:fadeUp .5s ease both;}
+
+/* ANIMATED BACKGROUND */
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.55;}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<button class="thoughts-btn" onclick="openThoughts()">Share your thoughts</button>
+
+<div class="page-wrap">
+
+  <nav>
+    <div class="nav-logo">Dark<span>/</span>Capacity</div>
+    <div class="nav-links">
+      <a href="https://darkcapacity.gargeenimdeo.com" target="_blank">Live Model</a>
+      <a href="#authors">Authors</a>
+      <a href="javascript:void(0)" onclick="openThoughts()">Debate</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <span class="hero-kicker">Read at your own risk — we go deep</span>
+    <h1 class="hero-title">What's <em>actually</em> inside<br>a data center?</h1>
+    <p class="hero-sub">Nobody publishes server counts. So we built a model to estimate them from what they do publish. Utility permits, EPA generator filings, sustainability reports. This is how it works, what we found, and why we think it matters.</p>
+    <div class="hero-meta">
+      <span class="meta-item"><strong>25</strong> real facilities</span>
+      <span class="meta-item"><strong>7</strong> provider types</span>
+      <span class="meta-item"><strong>3,421 MW</strong> sourced</span>
+      <span class="meta-item"><strong>April 2026</strong></span>
+    </div>
+  </div>
+
+  <!-- INTERACTIVE OPENER -->
+  <div class="section">
+    <div class="section-label">00</div>
+    <h2 class="section-title">Pick your <em>starting point</em></h2>
+    <p>We know not everyone reads the same way. Pick what describes you and we'll point you to the right section.</p>
+
+    <div class="opener-grid">
+      <div class="opener-card" onclick="pickOpener(this,'curious')">
+        <span class="opener-emoji">🤔</span>
+        <div class="opener-label">Genuinely curious</div>
+        <div class="opener-desc">You saw "data center CPU estimation" and wanted to know what that actually means</div>
+      </div>
+      <div class="opener-card" onclick="pickOpener(this,'data')">
+        <span class="opener-emoji">📊</span>
+        <div class="opener-label">Data person</div>
+        <div class="opener-desc">You want to see the methodology, the numbers, and whether the assumptions hold up</div>
+      </div>
+      <div class="opener-card" onclick="pickOpener(this,'skeptic')">
+        <span class="opener-emoji">🧐</span>
+        <div class="opener-label">The skeptic</div>
+        <div class="opener-desc">You think estimating CPU counts from power data is too hand-wavy to be useful</div>
+      </div>
+    </div>
+
+    <div class="opener-response" id="opener-curious">
+      <strong style="color:var(--cy)">Great starting point.</strong> The short version: data centers use a lot of power. That power has to go somewhere. We worked backwards from the power number to estimate how many CPUs are running inside. Start with Section 01 and follow the thread.
+    </div>
+    <div class="opener-response" id="opener-data">
+      <strong style="color:var(--cy)">You want Section 02.</strong> The formula, the assumptions, where each variable comes from, and the sensitivity analysis. All of it is sourced from primary documents. The GitHub repo has the Python script, SQL schema, and the full dataset. Scroll past the intro if the story-telling is not your thing.
+    </div>
+    <div class="opener-response" id="opener-skeptic">
+      <strong style="color:var(--cy)">Fair.</strong> The honest answer is: the estimates are uncertain. We never claimed otherwise. What we built is a defensible model with explicit assumptions and a confidence band that tells you how uncertain we are. Check Section 03 where we validate against actual public disclosures. Two of our estimates landed within the expected range of the derived figures. That is evidence of plausibility, not proof of accuracy. Read it and then tell us where it breaks.
+    </div>
+  </div>
+
+  <!-- SECTION 1 -->
+  <div class="section">
+    <div class="section-label">01</div>
+    <h2 class="section-title">Why don't they just <em>publish it?</em></h2>
+
+    <p>Ask Google how many CPUs are running in their Council Bluffs campus and they will give you their annual environmental report, which tells you how much electricity they used. Ask how many servers that translates to and they will smile politely and change the subject.</p>
+
+    <p>It is not that they are hiding something sinister. Server count is <strong>competitive intelligence</strong>. If you know how many CPUs AWS has, you can infer their cost structure, their capacity headroom, and their expansion plans. That is worth billions of dollars of advantage.</p>
+
+    <div class="question">"So if nobody publishes it, how do you know the estimates are right?"</div>
+
+    <p>Honestly, we do not know for certain. But we can get close. And where public cross-checks exist, specifically companies that disclosed their GPU count (which implies a host CPU count at a known ratio), we can validate. <strong>Two of our estimates came within the expected range of the derived figures.</strong> That is not proof. It is evidence of plausibility.</p>
+
+    <div class="callout">
+      <p>The point of this project is not to publish a number that is definitively correct. It is to demonstrate that a reasonable, defensible estimate is possible from public information alone. That is a different and more interesting claim.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 2 -->
+  <div class="section">
+    <div class="section-label">02</div>
+    <h2 class="section-title">The formula: <em>simpler than you think</em></h2>
+
+    <p>Every data center has a contracted power figure. It appears in utility permits, EPA generator filings, and sometimes press releases when the facility opens. That number, divided through three filters, gives you a CPU count.</p>
+
+    <div class="formula-block">
+      <div class="formula-line">
+        <span class="f-val">Total DC Power (MW)</span>
+        <span class="f-op">÷</span>
+        <span class="f-val">PUE</span>
+        <span class="f-op">=</span>
+        <span class="f-val">IT Load</span>
+      </div>
+      <div class="formula-line">
+        <span class="f-val">IT Load</span>
+        <span class="f-op">x</span>
+        <span class="f-val">Utilization Rate</span>
+        <span class="f-op">x</span>
+        <span class="f-val">1,000,000</span>
+        <span class="f-op">=</span>
+        <span class="f-val">Effective Draw (W)</span>
+      </div>
+      <div class="formula-line">
+        <span class="f-val">Effective Draw (W)</span>
+        <span class="f-op">÷</span>
+        <span class="f-val">Weighted CPU TDP</span>
+        <span class="f-eq">=</span>
+        <span class="f-res">CPU Count</span>
+      </div>
+      <div class="formula-note">
+        PUE = Power Usage Effectiveness. 1.09 means 9% of power goes to cooling and lighting, not servers.<br>
+        TDP = Thermal Design Power. How many watts a CPU socket draws under load.<br>
+        Weighted TDP = blend of Intel Xeon (300W avg), AMD EPYC (320W avg), ARM custom (75W est.) per provider's reported architecture mix.
+      </div>
+    </div>
+
+    <p>Three variables. Each one sourced from a primary document: sustainability reports, SEC filings, analyst data. Not estimated from thin air. <strong>The model is only as good as its inputs, and we spent most of our time on the inputs.</strong></p>
+
+    <p>The confidence band comes from running the formula at the extremes. Minimum CPUs if every socket is a 500W Intel Xeon Granite Rapids flagship. Maximum CPUs if every socket is a 75W ARM chip. The real answer lives somewhere in between, and the width of that band tells you how uncertain we are.</p>
+  </div>
+
+  <!-- SECTION 3 -->
+  <div class="section">
+    <div class="section-label">03</div>
+    <h2 class="section-title">The GPU problem: <em>nobody warned us about</em></h2>
+
+    <p>Halfway through building this, we realized we had been making a fundamental error for GPU-centric facilities like CoreWeave and Nebius.</p>
+
+    <p>When you divide a facility's IT load by CPU TDP, you are implicitly assuming all the power goes to CPUs. But in a GPU data center, <strong>roughly 85% of IT power goes to the GPUs</strong>. An NVIDIA H100 SXM draws 700 watts. The host CPUs that manage the GPU nodes draw maybe 300 watts combined, and there are only 2 CPUs per 8-GPU node.</p>
+
+    <div class="question">"So what did you do about it?"</div>
+
+    <p>We added a GPU power correction. For GPU-centric providers, the model strips 85% of the effective IT draw before dividing by CPU TDP. This gives you the <strong>host CPU count</strong>, not total compute. Which is the right metric because the question being answered is how many CPUs are running, not how much AI horsepower the facility has.</p>
+
+    <div class="callout amber">
+      <p><strong>Why does host CPU count matter?</strong> If you are a CPU company pitching to a data center, knowing they have 30,000 host CPUs tells you the replacement cycle, the upgrade path, and the competitive landscape. It is a different number from GPU count but equally valuable for the right buyer.</p>
+    </div>
+
+    <div class="validation">
+      <div class="val-title">Cross-Check Validation</div>
+      <div class="val-row">
+        <span class="val-badge ok">Validated</span>
+        <span class="val-name">Nebius Mantsala, Finland</span>
+        <span class="val-detail">60,000 GPUs disclosed, which implies roughly 30,000 host CPUs. Our model estimate: 27,583. Within expected range.</span>
+      </div>
+      <div class="val-row">
+        <span class="val-badge ok">Validated</span>
+        <span class="val-name">Nebius Kansas City, MO</span>
+        <span class="val-detail">35,000 GPUs planned, implying roughly 17,500 host CPUs. Our model estimate: 12,872. Within expected range.</span>
+      </div>
+      <div class="val-row">
+        <span class="val-badge warn">Note</span>
+        <span class="val-name">CoreWeave Plano, TX</span>
+        <span class="val-detail">The 3,500 GPU figure from the press release covers one rack cluster, not the full 120 MW facility. Cross-check not directly comparable to whole-facility estimate.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4 -->
+  <div class="section">
+    <div class="section-label">04</div>
+    <h2 class="section-title">What the numbers: <em>actually say</em></h2>
+
+    <div class="numbers-row">
+      <div class="num-card">
+        <span class="big-number">602</span>
+        <span class="big-number-label">MW — largest campus (Google Council Bluffs IA)</span>
+      </div>
+      <div class="num-card">
+        <span class="big-number">2.8M</span>
+        <span class="big-number-label">CPU sockets estimated at that campus alone</span>
+      </div>
+      <div class="num-card">
+        <span class="big-number">8 MW</span>
+        <span class="big-number-label">Smallest facility — AT&amp;T Kings Mountain NC</span>
+      </div>
+    </div>
+
+    <p>Google's Council Bluffs campus is a different universe from everything else in the dataset. At 602 MW across 8 buildings, it dwarfs the next largest facility (Microsoft Boydton VA at 412.5 MW). And the reason is obvious once you look at the CPU mix: <strong>Google runs 60% ARM chips</strong> (their own Axion silicon, based on Neoverse V2). Those draw 75W each versus 300W for Intel Xeon. Same power budget, roughly four times more sockets.</p>
+
+    <p>That is not a minor architectural decision. That is a competitive moat built out of custom silicon.</p>
+
+    <table class="data-table">
+      <thead>
+        <tr><th>Facility</th><th>MW</th><th>CPU Est.</th><th>CPU/MW</th><th>Type</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Google Council Bluffs IA</td><td>602</td><td class="hl">2,794,342</td><td class="cy">4,641</td><td>CPU-Mix</td></tr>
+        <tr><td>Microsoft Boydton VA</td><td>412.5</td><td class="hl">1,330,089</td><td class="cy">3,224</td><td>CPU-Mix</td></tr>
+        <tr><td>AWS Ashburn VA</td><td>202.7</td><td class="hl">835,825</td><td class="cy">4,122</td><td>CPU-Mix</td></tr>
+        <tr><td>Meta Altoona IA</td><td>142</td><td class="hl">445,699</td><td class="cy">3,138</td><td>CPU-Mix</td></tr>
+        <tr><td>Nebius Mantsala FI</td><td>75</td><td class="hl">27,583</td><td class="cy">368</td><td class="dim">GPU-Centric (host CPUs)</td></tr>
+        <tr><td>CoreWeave Plano TX</td><td>120</td><td class="hl">35,960</td><td class="cy">300</td><td class="dim">GPU-Centric (host CPUs)</td></tr>
+      </tbody>
+    </table>
+
+    <p>Notice how GPU-centric facilities have radically lower CPU-per-MW ratios. That is the model working correctly, not a bug. A Nebius facility running 60,000 H100 GPUs has far fewer CPUs per MW than a Google facility running 2.8 million Axion ARM chips. Different infrastructure, different ratio, different answer.</p>
+  </div>
+
+  <!-- SECTION 5 -->
+  <div class="section">
+    <div class="section-label">05</div>
+    <h2 class="section-title">The CapEx forecast: <em>where is this going?</em></h2>
+
+    <p>The second page of the model forecasts CPU fleet size from 2025 to 2030, using each provider's own CapEx as the anchor. Not the Big 4 aggregate. Their individual company figures from SEC filings and earnings calls.</p>
+
+    <p>The critical variable is <strong>GPU share of server spend</strong>. In 2024, Dell'Oro Group reported accelerated servers at 36 to 40% of OEM server revenue. Goldman Sachs projects that figure reaching the mid-50s by 2026 as Blackwell ramps. By 2030, the model assumes 65% for hyperscalers and 90% for GPU-centric providers.</p>
+
+    <div class="callout accent">
+      <p>This has a direct consequence for CPU budgets: as GPU spend grows, the slice available for CPU procurement shrinks as a fraction of total spend, even as absolute CapEx grows. CPU fleet sizes will still expand, but more slowly than the data center capacity numbers might suggest.</p>
+    </div>
+
+    <div class="question">"Is this pessimistic about CPUs?"</div>
+
+    <p>Not really. General-purpose cloud workloads, databases, web servers, internal tooling, app servers, are not going anywhere. Google, AWS, and Azure all have massive CPU-bound workloads that require continuous fleet refresh. <strong>The CPU market is not shrinking. It is just being joined by something much louder.</strong></p>
+  </div>
+
+  <!-- SECTION 6 -->
+  <div class="section">
+    <div class="section-label">06</div>
+    <h2 class="section-title">What we actually built: <em>and how</em></h2>
+
+    <p><strong>The interactive model:</strong> a single-page HTML/JS tool where you select a real facility and the CPU estimate auto-computes. Power figures are pre-researched from public records, never entered manually. The assumptions panel shows fixed values with hover tooltips linking to the primary source documents. No backend, no dependencies, lives as a static file.</p>
+
+    <p><strong>The Python estimation script:</strong> runs the full formula chain across all 25 facilities, applies the GPU power correction for GPU-centric providers, generates the CSV dataset with all intermediate values, and validates against public disclosures where available.</p>
+
+    <p><strong>The Tableau dashboard:</strong> built on the CSV output. Dark map with facility dots sized by CPU estimate, ranking bars, scatter plot of power versus compute, and a sensitivity table showing how estimates shift with PUE changes.</p>
+
+    <p><strong>The SQL schema:</strong> three tables, six analytical queries. Facility ranking by CPU estimate, CPU density per provider type, PUE sensitivity analysis, utilization sensitivity, cross-check validation, and a flat view for Tableau. Everything lives in the <a href="https://github.com/Gargee77/DC-Capacity-Model" target="_blank">GitHub repo</a>.</p>
+
+    <div class="stack-row">
+      <span class="badge acc">Python</span>
+      <span class="badge acc">SQL (PostgreSQL)</span>
+      <span class="badge cy">Tableau Public</span>
+      <span class="badge cy">HTML / CSS / JS</span>
+      <span class="badge am">Utility permits</span>
+      <span class="badge am">EPA filings</span>
+      <span class="badge am">SEC 6-K filings</span>
+      <span class="badge">Baxtel</span>
+      <span class="badge">Datacenter.fyi</span>
+      <span class="badge">Interconnection.fyi</span>
+    </div>
+  </div>
+
+  <!-- SECTION 7 -->
+  <div class="section">
+    <div class="section-label">07</div>
+    <h2 class="section-title">What we would do: <em>next</em></h2>
+
+    <p>The model is defensible but not complete. Here is what would make it significantly better:</p>
+
+    <p><strong>More facilities.</strong> 25 is a reasonable starting dataset. 100 would be a credible industry tool. The data collection process is manual right now, permit databases, press releases, sustainability reports. Automating that pipeline with a scraper and structured ingestion would be the real engineering work.</p>
+
+    <p><strong>Server-level validation.</strong> If you can find a facility where both the MW figure and the server count have been disclosed (rare but it happens in some regulatory filings), you can back-calculate the implied TDP and validate your CPU mix assumptions directly.</p>
+
+    <p><strong>Time series.</strong> Right now this is a point-in-time snapshot. Facilities expand over years. Tracking capacity growth over time, from permit filing to completion to expansion, would make the forecast page much more grounded in observed data rather than projected CapEx.</p>
+
+    <div class="pullquote">"The best models are not the ones that are right. They are the ones that are wrong in ways you understand."</div>
+  </div>
+
+  <!-- RESPONSES -->
+  <div class="section">
+    <div class="section-label">08</div>
+    <h2 class="section-title">Our responses: <em>your questions</em></h2>
+    <p>We read everything submitted through the debate panel. Responses we have written are pinned here. Check back, we update this as questions come in.</p>
+
+    <div class="responses-section">
+      <div class="responses-title">Responses from Gargee and Sriram</div>
+      <div class="responses-sub">Questions submitted through the debate panel that we have responded to publicly.</div>
+      <div id="responsesList">
+        <div class="response-empty">No responses yet. Submit a question through the debate panel and we will respond here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTHORS -->
+  <div class="section" id="authors">
+    <div class="section-label">The Team</div>
+    <h2 class="section-title">Who built: <em>this</em></h2>
+    <p>Two people, one shared obsession with data infrastructure, and a lot of time spent reading utility permit databases.</p>
+
+    <div class="authors-grid">
+      <div class="author-card">
+        <div class="author-initial g">G</div>
+        <div class="author-name">Gargee Nimdeo</div>
+        <div class="author-role">Data and BI Engineering</div>
+        <div class="author-links">
+          <a class="author-link" href="https://gargeenimdeo.com" target="_blank">Portfolio</a>
+          <a class="author-link" href="https://linkedin.com/in/gargee-nimdeo" target="_blank">LinkedIn</a>
+          <a class="author-link" href="https://github.com/Gargee77" target="_blank">GitHub</a>
+        </div>
+      </div>
+
+      <div class="author-card">
+        <div class="author-initial s">S</div>
+        <div class="author-name">KG Sriram</div>
+        <div class="author-role">Product Marketing Manager</div>
+        <div class="author-links">
+          <a class="author-link" href="https://www.linkedin.com/in/kg-sriram/" target="_blank">LinkedIn</a>
+          <a class="author-link" href="https://github.com/kgs222" target="_blank">GitHub</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- page-wrap -->
+
+
+<!-- THOUGHTS MODAL -->
+<div class="modal-overlay" id="thoughtsModal" onclick="closeOnOverlay(event)">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Got a <em>take?</em></div>
+      <button class="modal-close" onclick="closeThoughts()">x</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-sub">Disagree with an assumption? Found a better source? Think the GPU correction is wrong? Drop it here. We read everything. Your thought gets pinned below for others to see and debate. Responses from us appear on the main page in Section 08.</p>
+
+      <div id="thoughtForm">
+        <div class="form-field">
+          <label>Your Name <span style="color:var(--t3)">(anonymous works)</span></label>
+          <input type="text" id="thoughtName" placeholder="e.g. Priya, Anonymous, DC Engineer">
+        </div>
+        <div class="form-field">
+          <label>Your Email <span style="color:var(--t3)">(optional, if you want a direct reply)</span></label>
+          <input type="email" id="thoughtEmail" placeholder="leave blank to stay anonymous">
+          <div class="email-note">If you share your email, we will reply directly. If not, check Section 08 on this page for our public responses.</div>
+        </div>
+        <div class="form-field">
+          <label>What kind of thought is this?</label>
+          <select id="thoughtType">
+            <option value="disagree">I disagree with an assumption</option>
+            <option value="source">I have a better source</option>
+            <option value="question">I have a question</option>
+            <option value="extension">Here is what I would add</option>
+            <option value="debate">Hot take / debate starter</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Your thought</label>
+          <textarea id="thoughtBody" placeholder="Be specific. Reference a facility, an assumption, a number. The more concrete the better."></textarea>
+        </div>
+        <button class="submit-btn" id="submitBtn" onclick="submitThought()">Pin this thought</button>
+      </div>
+
+      <div class="success-msg" id="successMsg">
+        <span class="big">📌</span>
+        Pinned. We will read it. Check Section 08 for our response.
+      </div>
+
+      <div style="margin-top:24px;">
+        <div class="postit-board-title">Pinned thoughts from readers</div>
+        <div class="postit-board" id="postitBoard">
+          <div class="no-thoughts" id="noThoughts">No thoughts pinned yet. Be the first.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<script>
+const TYPE_LABELS={disagree:'Disagrees with assumption',source:'Better source',question:'Question',extension:'Wants to extend',debate:'Hot take'};
+const TYPE_COLORS={disagree:'#ef4444',source:'#28A745',question:'#007BFF',extension:'#00c8d7',debate:'#f59e0b'};
+
+function getThoughts(){try{return JSON.parse(localStorage.getItem('dc_thoughts')||'[]');}catch(e){return[];}}
+function saveThoughts(t){localStorage.setItem('dc_thoughts',JSON.stringify(t));}
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function renderThoughts(){
+  const board=document.getElementById('postitBoard');
+  const none=document.getElementById('noThoughts');
+  const thoughts=getThoughts();
+  if(thoughts.length===0){none.style.display='block';board.innerHTML='<div class="no-thoughts" id="noThoughts">No thoughts pinned yet. Be the first.</div>';return;}
+  board.innerHTML=thoughts.slice().reverse().map(t=>`
+    <div class="postit ${t.isNew?'new':''}">
+      <div class="postit-name">${escHtml(t.name||'Anonymous')}</div>
+      <div class="postit-type" style="color:${TYPE_COLORS[t.type]||'var(--t3)'}">${TYPE_LABELS[t.type]||t.type}</div>
+      <div class="postit-body">${escHtml(t.body)}</div>
+      <div class="postit-time">${t.time}</div>
+    </div>`).join('');
+}
+
+function submitThought(){
+  const name=document.getElementById('thoughtName').value.trim()||'Anonymous';
+  const email=document.getElementById('thoughtEmail').value.trim();
+  const type=document.getElementById('thoughtType').value;
+  const body=document.getElementById('thoughtBody').value.trim();
+  if(!body){document.getElementById('thoughtBody').style.borderColor='#ef4444';document.getElementById('thoughtBody').focus();setTimeout(()=>document.getElementById('thoughtBody').style.borderColor='',1500);return;}
+
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true;btn.textContent='Pinning...';
+
+  const thought={name,type,body,hasEmail:!!email,time:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}),isNew:true};
+  const thoughts=getThoughts();thoughts.push(thought);saveThoughts(thoughts);
+
+  // If email provided, send to both addresses via mailto
+  if(email){
+    const subject=encodeURIComponent(`[Dark Capacity] ${TYPE_LABELS[type]} from ${name}`);
+    const emailBody=encodeURIComponent(`Name: ${name}\nEmail: ${email}\nType: ${TYPE_LABELS[type]}\n\n${body}\n\n---\nSent from Dark Capacity write-up`);
+    const a=document.createElement('a');
+    a.href=`mailto:gnimdeo@ncsu.edu,skattup@ncsu.edu?subject=${subject}&body=${emailBody}`;
+    a.style.display='none';document.body.appendChild(a);a.click();document.body.removeChild(a);
+  }
+
+  document.getElementById('thoughtForm').style.display='none';
+  document.getElementById('successMsg').style.display='block';
+  setTimeout(()=>{
+    renderThoughts();
+    document.getElementById('thoughtForm').style.display='block';
+    document.getElementById('successMsg').style.display='none';
+    document.getElementById('thoughtBody').value='';
+    document.getElementById('thoughtName').value='';
+    document.getElementById('thoughtEmail').value='';
+    btn.disabled=false;btn.textContent='Pin this thought';
+  },2500);
+}
+
+function pickOpener(card,type){
+  document.querySelectorAll('.opener-card').forEach(c=>c.classList.remove('picked'));
+  document.querySelectorAll('.opener-response').forEach(r=>r.classList.remove('show'));
+  card.classList.add('picked');
+  document.getElementById('opener-'+type).classList.add('show');
+}
+
+function openThoughts(){document.getElementById('thoughtsModal').classList.add('open');renderThoughts();}
+function closeThoughts(){document.getElementById('thoughtsModal').classList.remove('open');}
+function closeOnOverlay(e){if(e.target.id==='thoughtsModal')closeThoughts();}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeThoughts();});
+window.addEventListener('DOMContentLoaded',renderThoughts);
+
+// ===== ANIMATED BACKGROUND =====
+(function(){
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, nodes=[], pulses=[];
+  const ACC = [0,123,255], CY = [0,200,215], DIM = [30,55,80];
+
+  function resize(){
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function randInt(a,b){return Math.floor(Math.random()*(b-a))+a;}
+  function lerp(a,b,t){return a+(b-a)*t;}
+
+  // Create a grid of nodes that look like a data center network topology
+  function initNodes(){
+    nodes = [];
+    const cols = Math.ceil(W/120), rows = Math.ceil(H/100);
+    for(let r=0;r<=rows;r++){
+      for(let c2=0;c2<=cols;c2++){
+        // Only place nodes at ~35% of grid positions for sparsity
+        if(Math.random()>0.35) continue;
+        nodes.push({
+          x: c2*120 + randInt(-20,20),
+          y: r*100 + randInt(-15,15),
+          r: Math.random()<0.15 ? 2.5 : 1.2,
+          col: Math.random()<0.3 ? CY : ACC,
+          alpha: 0.08 + Math.random()*0.12,
+          pulseT: Math.random()*Math.PI*2,
+          pulseSpeed: 0.008 + Math.random()*0.012
+        });
+      }
+    }
+  }
+
+  // Pulses travel along edges between nearby nodes
+  function maybePulse(){
+    if(pulses.length > 12) return;
+    if(Math.random() > 0.03) return;
+    const src = nodes[randInt(0,nodes.length)];
+    const candidates = nodes.filter(n=>{
+      const dx=n.x-src.x, dy=n.y-src.y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      return d>60 && d<200 && n!==src;
+    });
+    if(!candidates.length) return;
+    const dst = candidates[randInt(0,candidates.length)];
+    pulses.push({
+      sx:src.x, sy:src.y, ex:dst.x, ey:dst.y,
+      t:0, speed: 0.004+Math.random()*0.006,
+      col: Math.random()<0.4 ? CY : ACC,
+      alpha: 0.18+Math.random()*0.14
+    });
+  }
+
+  function drawEdge(ax,ay,bx,by,alpha,col){
+    ctx.beginPath();
+    ctx.moveTo(ax,ay);
+    ctx.lineTo(bx,by);
+    ctx.strokeStyle=`rgba(${col[0]},${col[1]},${col[2]},${alpha})`;
+    ctx.lineWidth=0.6;
+    ctx.stroke();
+  }
+
+  let raf;
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+
+    // Draw edges between nearby nodes
+    for(let i=0;i<nodes.length;i++){
+      for(let j=i+1;j<nodes.length;j++){
+        const dx=nodes[j].x-nodes[i].x, dy=nodes[j].y-nodes[i].y;
+        const d=Math.sqrt(dx*dx+dy*dy);
+        if(d<160){
+          const a = (1-(d/160))*0.06;
+          drawEdge(nodes[i].x,nodes[i].y,nodes[j].x,nodes[j].y,a,DIM);
+        }
+      }
+    }
+
+    // Draw nodes with gentle pulse
+    for(const n of nodes){
+      n.pulseT += n.pulseSpeed;
+      const pA = n.alpha + Math.sin(n.pulseT)*0.04;
+      ctx.beginPath();
+      ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(${n.col[0]},${n.col[1]},${n.col[2]},${Math.max(0,pA)})`;
+      ctx.fill();
+    }
+
+    // Draw and move pulses
+    maybePulse();
+    pulses = pulses.filter(p=>{
+      p.t += p.speed;
+      if(p.t>1) return false;
+      const px = lerp(p.sx,p.ex,p.t);
+      const py = lerp(p.sy,p.ey,p.t);
+      // Trail
+      for(let i=0;i<8;i++){
+        const bt = Math.max(0,p.t - i*0.018);
+        const bx = lerp(p.sx,p.ex,bt);
+        const by = lerp(p.sy,p.ey,bt);
+        const ta = p.alpha*(1-i/8)*0.6;
+        ctx.beginPath();
+        ctx.arc(bx,by,1.2*(1-i/10),0,Math.PI*2);
+        ctx.fillStyle=`rgba(${p.col[0]},${p.col[1]},${p.col[2]},${ta})`;
+        ctx.fill();
+      }
+      // Head
+      ctx.beginPath();
+      ctx.arc(px,py,2,0,Math.PI*2);
+      ctx.fillStyle=`rgba(${p.col[0]},${p.col[1]},${p.col[2]},${p.alpha})`;
+      ctx.fill();
+      return true;
+    });
+
+    raf = requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize',()=>{resize();initNodes();});
+  resize();
+  initNodes();
+  draw();
+})();
+
+</script>
+</body>
+</html>
