@@ -11,7 +11,7 @@ Read the full breakdown → (darkcapacity.gargeenimdeo.com/writeup)
 
 Data centers publish almost nothing about the servers inside them. But they do file utility permits, publish PUE scores in sustainability reports, and disclose CPU architecture decisions in earnings calls and technical blogs.
 
-We reverse-engineered CPU socket counts for 25 facilities across 15 providers — Google, AWS, Meta, Microsoft, CoreWeave, Nebius, and others, using a formula chain built entirely from public sources:
+We reverse-engineered CPU socket counts for 25 facilities across 15 providers - Google, AWS, Meta, Microsoft, CoreWeave, Nebius, and others, using a formula chain built entirely from public sources:
 
 Facility Power (MW) → IT Load (÷ PUE) → Effective Load (× Utilization)
 → Blended TDP (Intel / AMD / ARM mix) → CPU Socket Estimate
@@ -37,7 +37,9 @@ We modeled Google The Dalles B1 in [dc-simulator-omega.vercel.app](https://dc-si
 # Authors
 
 Gargee Nimdeo: Data and BI Engineering · [LinkedIn](https://linkedin.com/in/gargee-nimdeo) · [GitHub](https://github.com/Gargee77)
+
 KG Sriram: Product Marketing Manager · [LinkedIn](https://www.linkedin.com/in/kg-sriram/) · [GitHub](https://github.com/kgs222)
+
 Sandeep Vangara: Supply Chain Manager · [LinkedIn](https://www.linkedin.com/in/sandeepvangara/) · [GitHub](https://github.com/lordSauron1710)
 
 *Data sourced from public filings, sustainability reports, and press releases. CPU estimates carry a ±25% range. This is an estimation exercise, not an audit.*
