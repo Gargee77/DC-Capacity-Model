@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dark Capacity: Fleet Intelligence Dashboard</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23101820'/><rect x='4' y='8' width='24' height='4' rx='1' fill='%234d9de0'/><rect x='4' y='14' width='24' height='4' rx='1' fill='%239b72cf'/><rect x='4' y='20' width='24' height='4' rx='1' fill='%233da85c'/><rect x='27' y='8' width='2' height='2' rx='1' fill='%234d9de0'/><rect x='27' y='14' width='2' height='2' rx='1' fill='%239b72cf'/><rect x='27' y='20' width='2' height='2' rx='1' fill='%233da85c'/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/ag-grid-community@32.0.0/dist/ag-grid-community.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+:root {
+  --bg:#101820; --s1:#141e28; --s2:#1a2535; --s3:#1f2d40;
+  --b1:#1e2d3e; --b2:#253447; --b3:#2d3f55;
+  --acc:#007BFF; --acc2:#40a0ff; --adim:rgba(0,123,255,0.10); --aglow:rgba(0,123,255,0.22);
+  --cy:#00c8d7; --cdim:rgba(0,200,215,0.12);
+  --gn:#28A745; --gdim:rgba(40,167,69,0.14);
+  --am:#f59e0b;
+  --pu:#8b5cf6; --pdim:rgba(139,92,246,0.14);
+  --rd:#ef4444;
+  --tx:#e8f0f8; --t2:#8ba4be; --t3:#4d6a82;
+  --mono:'Space Mono',monospace; --sans:'DM Sans',sans-serif; --r:10px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);font-size:15px;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,rgba(0,123,255,0.05) 1px,transparent 1px);background-size:32px 32px;pointer-events:none;z-index:0;}
+.wrap{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:0 28px 80px;}
+
+nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0 20px;border-bottom:1px solid var(--b1);margin-bottom:40px;gap:12px;flex-wrap:wrap;}
+.logo{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--acc2);letter-spacing:0.04em;}
+.logo span{color:var(--t3);font-weight:400;}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.nbtn{font-family:var(--mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--t2);background:none;border:1px solid var(--b2);border-radius:5px;padding:8px 14px;cursor:pointer;transition:all .18s;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+.nbtn:hover{border-color:var(--acc);color:var(--acc2);background:var(--adim);}
+
+.hero{margin-bottom:32px;}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--cy);background:var(--cdim);border:1px solid rgba(0,200,215,0.25);padding:5px 12px;border-radius:3px;display:inline-block;margin-bottom:16px;}
+h1{font-family:var(--mono);font-size:clamp(20px,3vw,34px);font-weight:700;line-height:1.15;margin-bottom:10px;}
+h1 .hl{color:var(--acc2);}
+.sub{font-size:14px;color:var(--t2);line-height:1.7;max-width:680px;}
+
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+@media(max-width:720px){.kpi-row{grid-template-columns:1fr 1fr;}}
+.kpi{background:var(--s1);border:1px solid var(--b2);border-radius:var(--r);padding:18px 20px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kpi.blue::before{background:linear-gradient(90deg,var(--acc),var(--cy));}
+.kpi.cyan::before{background:linear-gradient(90deg,var(--cy),var(--gn));}
+.kpi.green::before{background:linear-gradient(90deg,var(--gn),var(--am));}
+.kpi.purple::before{background:linear-gradient(90deg,var(--pu),var(--acc));}
+.kpi-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--t3);margin-bottom:8px;}
+.kpi-value{font-family:var(--mono);font-size:26px;font-weight:700;line-height:1;margin-bottom:4px;}
+.kpi.blue .kpi-value{color:var(--acc2);}
+.kpi.cyan .kpi-value{color:var(--cy);}
+.kpi.green .kpi-value{color:var(--gn);}
+.kpi.purple .kpi-value{color:var(--pu);}
+.kpi-sub{font-size:11px;color:var(--t3);}
+
+.filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.filter-label{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--t3);flex-shrink:0;}
+.filter-chip{font-family:var(--mono);font-size:11px;letter-spacing:0.04em;padding:6px 14px;border-radius:20px;border:1px solid var(--b2);background:var(--s2);color:var(--t2);cursor:pointer;transition:all .18s;}
+.filter-chip.active{background:var(--adim);border-color:var(--acc);color:var(--acc2);}
+.filter-chip.gpu-active{background:var(--pdim);border-color:var(--pu);color:var(--pu);}
+.filter-chip.cpu-active{background:var(--cdim);border-color:var(--cy);color:var(--cy);}
+.filter-chip.chv-active{background:rgba(245,158,11,0.13);border-color:var(--am);color:var(--am);}
+.filter-sep{width:1px;height:20px;background:var(--b2);flex-shrink:0;}
+.search-box{font-family:var(--mono);font-size:12px;background:var(--s2);border:1px solid var(--b2);border-radius:6px;color:var(--tx);padding:7px 12px;outline:none;transition:border-color .18s;width:260px;min-width:260px;flex-shrink:0;}
+.search-box:focus{border-color:var(--acc);}
+.search-box::placeholder{color:var(--t3);}
+
+.val-note{background:var(--gdim);border:1px solid rgba(40,167,69,0.28);border-radius:8px;padding:12px 18px;display:flex;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
+.val-badge{font-family:var(--mono);font-size:11px;color:var(--gn);white-space:nowrap;background:rgba(40,167,69,0.1);border:1px solid rgba(40,167,69,0.3);border-radius:4px;padding:4px 10px;}
+.val-text{font-size:13px;color:var(--t2);line-height:1.6;}
+.val-text a{color:var(--acc2);text-decoration:none;}
+
+.charts-2col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media(max-width:900px){.charts-2col{grid-template-columns:1fr;}}
+.chart-panel{background:var(--s1);border:1px solid var(--b2);border-radius:var(--r);overflow:hidden;}
+.cp-header{padding:14px 18px;border-bottom:1px solid var(--b1);background:var(--s2);}
+.cp-title{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:var(--t2);font-weight:700;}
+.cp-sub{font-family:var(--mono);font-size:10px;color:var(--t3);margin-top:3px;}
+.cp-body{padding:14px;}
+
+.grid-panel{background:var(--s1);border:1px solid var(--b2);border-radius:var(--r);overflow:hidden;margin-bottom:16px;}
+.gp-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--b1);background:var(--s2);}
+.gp-title{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:var(--t2);font-weight:700;}
+.gp-count{font-family:var(--mono);font-size:11px;color:var(--t3);}
+#grid-count{color:var(--acc2);}
+
+.ag-theme-custom{
+  --ag-background-color:#141e28;
+  --ag-odd-row-background-color:#1a2535;
+  --ag-header-background-color:#1f2d40;
+  --ag-border-color:#1e2d3e;
+  --ag-row-border-color:#1e2d3e;
+  --ag-header-foreground-color:#8ba4be;
+  --ag-foreground-color:#e8f0f8;
+  --ag-row-hover-color:#1f2d40;
+  --ag-selected-row-background-color:rgba(0,123,255,0.12);
+  --ag-font-family:'DM Sans',sans-serif;
+  --ag-font-size:13px;
+  --ag-cell-horizontal-padding:14px;
+  --ag-row-height:42px;
+  --ag-header-height:40px;
+  --ag-icon-font-family:none;
+}
+.ag-theme-custom .ag-header-cell-label{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;}
+.ag-theme-custom .ag-root-wrapper{border:none;border-radius:0;}
+.ag-theme-custom .green-cell{color:#5aaa72 !important;}
+.ag-theme-custom .yellow-cell{color:#c9933a !important;}
+.ag-theme-custom .red-cell{color:#b85c5c !important;}
+.ag-theme-custom .ag-icon{display:none !important;}
+.ag-theme-custom .ag-sort-indicator-icon{display:none !important;}
+.ag-theme-custom .ag-header-cell-menu-button{display:none !important;}
+.ag-theme-custom .ag-sort-order{display:none !important;}
+
+.type-badge{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.04em;padding:3px 8px;border-radius:3px;display:inline-block;}
+.type-badge.cpu{background:rgba(77,157,224,0.14);color:#4d9de0;border:1px solid rgba(77,157,224,0.35);}
+.type-badge.gpu{background:rgba(155,114,207,0.14);color:#9b72cf;border:1px solid rgba(155,114,207,0.35);}
+.type-badge.chv{background:rgba(224,155,61,0.14);color:#e09b3d;border:1px solid rgba(224,155,61,0.35);}
+
+.footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--b1);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.footer-text{font-family:var(--mono);font-size:11px;color:var(--t3);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav>
+    <div class="logo">DARK<span>:</span>CAPACITY <span>/ Fleet Dashboard</span></div>
+    <div class="nav-right"></div>
+  </nav>
+
+  <div class="hero">
+    <div class="kicker">Fleet Intelligence · 25 Facilities · 15 Providers</div>
+    <h1>Global DC Compute <span class="hl">Fleet Overview</span></h1>
+    <p class="sub">Reverse-engineered CPU capacity estimates from public power data, PUE disclosures, utility permits, and CPU architecture filings. Filter below to slice the fleet by type or provider.</p>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi blue">
+      <div class="kpi-label">Total Tracked Power</div>
+      <div class="kpi-value" id="kpi-mw">—</div>
+      <div class="kpi-sub">facility MW · 25 sites</div>
+    </div>
+    <div class="kpi cyan">
+      <div class="kpi-label">Est. Total CPU Sockets</div>
+      <div class="kpi-value" id="kpi-cpu">—</div>
+      <div class="kpi-sub">point estimate · ±25% range</div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-label">Weighted Avg PUE</div>
+      <div class="kpi-value" id="kpi-pue">—</div>
+      <div class="kpi-sub">MW-weighted across fleet</div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-label">GPU-Centric Share</div>
+      <div class="kpi-value" id="kpi-gpu">—</div>
+      <div class="kpi-sub">of tracked MW</div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <span class="filter-label">Filter:</span>
+    <button class="filter-chip active" onclick="setFilter('all',this)">All Facilities</button>
+    <button class="filter-chip" onclick="setFilter('CPU-Mix',this)">CPU-Mix</button>
+    <button class="filter-chip" onclick="setFilter('GPU-Centric',this)">GPU-Centric</button>
+    <button class="filter-chip" onclick="setFilter('CPU-Heavy',this)">CPU-Heavy</button>
+    <div class="filter-sep"></div>
+    <input class="search-box" id="quickSearch" placeholder="Search provider or location..." oninput="doSearch(this.value)">
+  </div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="charts-2col">
+    <div class="chart-panel">
+      <div class="cp-header">
+        <div class="cp-title">Facility Power (MW)</div>
+        <div class="cp-sub">From permits, sustainability reports, and press releases · sorted descending</div>
+      </div>
+      <div class="cp-body"><div id="chart-mw" style="height:290px;"></div></div>
+    </div>
+    <div class="chart-panel">
+      <div class="cp-header">
+        <div class="cp-title">PUE vs Server Utilization</div>
+        <div class="cp-sub">Bubble size = facility MW · Color = DC type · Hyperscalers cluster top-right</div>
+      </div>
+      <div class="cp-body"><div id="chart-scatter" style="height:290px;"></div></div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 2 -->
+  <div class="charts-2col">
+    <div class="chart-panel">
+      <div class="cp-header">
+        <div class="cp-title">CPU Architecture Mix by Provider</div>
+        <div class="cp-sub">Intel / AMD / ARM share · ARM transition visible in hyperscalers</div>
+      </div>
+      <div class="cp-body"><div id="chart-arch" style="height:290px;"></div></div>
+    </div>
+    <div class="chart-panel">
+      <div class="cp-header">
+        <div class="cp-title">Estimated CPU Sockets by Facility</div>
+        <div class="cp-sub">Point estimate · Color by DC type · Hover for ±25% range</div>
+      </div>
+      <div class="cp-body"><div id="chart-cpu" style="height:290px;"></div></div>
+    </div>
+  </div>
+
+  <!-- AG GRID -->
+  <div class="grid-panel">
+    <div class="gp-header">
+      <div class="gp-title">Facility Data Table · Click column headers to sort</div>
+      <div class="gp-count">Showing <span id="grid-count">25</span> of 25 facilities</div>
+    </div>
+    <div class="ag-theme-custom" id="myGrid" style="height:480px;"></div>
+  </div>
+
+  <div class="footer">
+    <span class="footer-text">Dark Capacity · Data from public filings, sustainability reports, and press releases</span>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const PROVIDERS = {
+  google:         {pue:1.09,util:85,intel:25,amd:15,arm:60,type:'CPU-Mix'},
+  aws:            {pue:1.15,util:85,intel:30,amd:15,arm:55,type:'CPU-Mix'},
+  meta:           {pue:1.08,util:85,intel:40,amd:35,arm:25,type:'CPU-Mix'},
+  azure:          {pue:1.16,util:85,intel:35,amd:30,arm:35,type:'CPU-Mix'},
+  coreweave:      {pue:1.20,util:82,intel:50,amd:40,arm:10,type:'GPU-Centric'},
+  nebius:         {pue:1.10,util:77,intel:50,amd:40,arm:10,type:'GPU-Centric'},
+  scaleway:       {pue:1.30,util:68,intel:55,amd:35,arm:10,type:'CPU-Mix'},
+  equinix:        {pue:1.45,util:65,intel:55,amd:30,arm:15,type:'CPU-Mix'},
+  digital_realty: {pue:1.48,util:62,intel:58,amd:28,arm:14,type:'CPU-Mix'},
+  oracle:         {pue:1.40,util:70,intel:60,amd:25,arm:15,type:'CPU-Mix'},
+  applied_digital:{pue:1.30,util:80,intel:50,amd:40,arm:10,type:'GPU-Centric'},
+  telco:          {pue:1.45,util:57,intel:65,amd:25,arm:10,type:'CPU-Heavy'},
+  jio:            {pue:1.30,util:75,intel:45,amd:35,arm:20,type:'GPU-Centric'},
+  ovh:            {pue:1.35,util:65,intel:55,amd:35,arm:10,type:'CPU-Mix'},
+  hetzner:        {pue:1.30,util:70,intel:60,amd:30,arm:10,type:'CPU-Mix'},
+};
+
+const FACILITIES_RAW = [
+  {label:'Google — Council Bluffs IA',  prov:'google',         mw:602},
+  {label:'Google — The Dalles OR',       prov:'google',         mw:80},
+  {label:'Google — Ashburn VA',          prov:'google',         mw:100},
+  {label:'AWS — Ashburn VA',             prov:'aws',            mw:202.7},
+  {label:'AWS — Hilliard OH',            prov:'aws',            mw:60},
+  {label:'Meta — DeKalb IL',            prov:'meta',           mw:40},
+  {label:'Meta — Prineville OR',         prov:'meta',           mw:112},
+  {label:'Meta — Altoona IA',           prov:'meta',           mw:142},
+  {label:'Microsoft — Boydton VA',       prov:'azure',          mw:412.5},
+  {label:'Microsoft — Quincy WA',        prov:'azure',          mw:150},
+  {label:'CoreWeave — Plano TX',         prov:'coreweave',      mw:120},
+  {label:'CoreWeave — Lancaster PA',     prov:'coreweave',      mw:100},
+  {label:'Nebius — Mantsala Finland',    prov:'nebius',         mw:75},
+  {label:'Nebius — Kansas City MO',      prov:'nebius',         mw:35},
+  {label:'Scaleway — Paris PAR-DC5',     prov:'scaleway',       mw:30},
+  {label:'Equinix — Silicon Valley SV12',prov:'equinix',        mw:45},
+  {label:'Equinix — Atlanta xScale',     prov:'equinix',        mw:100},
+  {label:'Digital Realty — Ashburn ACC7',prov:'digital_realty', mw:60},
+  {label:'Oracle Cloud — Ashburn VA',    prov:'oracle',         mw:80},
+  {label:'Applied Digital — Ellendale ND',prov:'applied_digital',mw:100},
+  {label:"AT&T — Kings Mountain NC",    prov:'telco',          mw:8},
+  {label:'Verizon — Ashburn VA',         prov:'telco',          mw:20},
+  {label:'Reliance Jio — Jamnagar Gujarat',prov:'jio',          mw:120},
+  {label:'OVHcloud — Strasbourg SBG5',   prov:'ovh',            mw:40},
+  {label:'Hetzner — Falkenstein DC Park',prov:'hetzner',        mw:35},
+];
+
+function calcCPU(mw, provKey) {
+  const p = PROVIDERS[provKey];
+  const itLoad = mw / p.pue;
+  const effW = itLoad * (p.util/100) * 1e6;
+  const blendTdp = (p.intel/100)*300 + (p.amd/100)*320 + (p.arm/100)*75;
+  return Math.round(effW / blendTdp);
+}
+
+const ROWS = FACILITIES_RAW.map(f => {
+  const p = PROVIDERS[f.prov];
+  const cpu = calcCPU(f.mw, f.prov);
+  const provLabel = f.prov.replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
+  return {
+    facility:f.label, provider:provLabel, _prov:f.prov,
+    mw:f.mw, pue:p.pue, util:p.util, type:p.type,
+    cpuPt:cpu, cpuLo:Math.round(cpu*0.75), cpuHi:Math.round(cpu*1.25),
+    intel:p.intel, amd:p.amd, arm:p.arm,
+  };
+});
+
+// ===== STATE =====
+let currentFilter = 'all';
+let currentSearch = '';
+let gridApi;
+
+function getRows() {
+  return ROWS.filter(r => {
+    const mt = currentFilter==='all' || r.type===currentFilter;
+    const q = currentSearch.toLowerCase();
+    const ms = !q || r.facility.toLowerCase().includes(q) || r.provider.toLowerCase().includes(q);
+    return mt && ms;
+  });
+}
+
+// ===== KPIs =====
+function fmt(n){return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?Math.round(n/1e3)+'K':n.toString();}
+
+function updateKPIs(rows) {
+  const totalMW = rows.reduce((s,r)=>s+r.mw,0);
+  const totalCPU = rows.reduce((s,r)=>s+r.cpuPt,0);
+  const wPUE = rows.reduce((s,r)=>s+r.pue*r.mw,0)/(totalMW||1);
+  const gpuMW = rows.filter(r=>r.type==='GPU-Centric').reduce((s,r)=>s+r.mw,0);
+  document.getElementById('kpi-mw').textContent = Math.round(totalMW).toLocaleString()+' MW';
+  document.getElementById('kpi-cpu').textContent = fmt(totalCPU);
+  document.getElementById('kpi-pue').textContent = wPUE.toFixed(2);
+  document.getElementById('kpi-gpu').textContent = totalMW?Math.round(gpuMW/totalMW*100)+'%':'—';
+}
+
+// ===== COLORS — jewel tone palette, fresh not neon =====
+const PCOLS = {
+  google:         '#4d9de0',  // sapphire blue
+  aws:            '#e09b3d',  // amber gold
+  meta:           '#6c8ebf',  // slate blue
+  azure:          '#3dbfa0',  // teal
+  coreweave:      '#9b72cf',  // medium purple
+  nebius:         '#3da85c',  // emerald
+  scaleway:       '#cf6c72',  // rose
+  equinix:        '#3daabf',  // cerulean
+  digital_realty: '#7272bf',  // periwinkle
+  oracle:         '#cf7a3d',  // burnt orange
+  applied_digital:'#8a60c4',  // violet
+  telco:          '#7a9aaa',  // steel
+  jio:            '#3da87a',  // jade
+  ovh:            '#4d7ecf',  // cobalt
+  hetzner:        '#bf5c9e',  // magenta-ish
+};
+const TCOLS = {'CPU-Mix':'#4d9de0','GPU-Centric':'#9b72cf','CPU-Heavy':'#e09b3d'};
+
+const BASE = {
+  backgroundColor:'transparent',
+  textStyle:{fontFamily:"'Space Mono',monospace",fontSize:10},
+  tooltip:{backgroundColor:'#1a2535',borderColor:'#253447',textStyle:{color:'#e8f0f8',fontFamily:"'DM Sans',sans-serif",fontSize:12}},
+};
+
+let charts={};
+
+function initCharts(){
+  ['chart-mw','chart-scatter','chart-arch','chart-cpu'].forEach(id=>{
+    charts[id]=echarts.init(document.getElementById(id),null,{renderer:'canvas'});
+  });
+  window.addEventListener('resize',()=>Object.values(charts).forEach(c=>c.resize()));
+}
+
+function renderCharts(rows){
+  // MW BAR — short provider-only labels, always rotated, overflow hidden
+  const ms=[...rows].sort((a,b)=>b.mw-a.mw);
+  const mwLabels=ms.map(r=>{
+    const prov=r.provider.split(' ')[0]; // just first word: "Google", "AWS", etc.
+    const loc=(r.facility.split('—')[1]||'').trim().split(',')[0].trim().split(' ').slice(0,2).join(' ');
+    return prov+'\n'+loc;
+  });
+  charts['chart-mw'].setOption({...BASE,
+    grid:{left:8,right:8,top:8,bottom:72,containLabel:true},
+    xAxis:{type:'category',data:mwLabels,
+      axisLabel:{color:'#4d6a82',fontSize:8,interval:0,rotate:45,overflow:'truncate',width:60},
+      axisLine:{lineStyle:{color:'#1e2d3e'}},axisTick:{show:false}},
+    yAxis:{type:'value',axisLabel:{color:'#4d6a82',fontSize:9,formatter:v=>v+'MW'},
+      splitLine:{lineStyle:{color:'#1e2d3e',type:'dashed'}},axisLine:{show:false}},
+    tooltip:{formatter:p=>`<b>${ms[p.dataIndex].facility}</b><br/>Power: <b>${p.value} MW</b><br/>Type: ${ms[p.dataIndex].type}`},
+    series:[{type:'bar',data:ms.map(r=>({value:r.mw,itemStyle:{color:PCOLS[r._prov]||'#6ea8d4',borderRadius:[3,3,0,0]}})),barMaxWidth:28}],
+  },{replaceMerge:['series']});
+
+  // SCATTER — use replaceMerge to fully replace series so filtered-out dots disappear
+  const typeGroups={};
+  rows.forEach(r=>{
+    if(!typeGroups[r.type]) typeGroups[r.type]=[];
+    typeGroups[r.type].push(r);
+  });
+  const allTypes=['CPU-Mix','GPU-Centric','CPU-Heavy'];
+  // Build series for ALL types — empty data for types not in current filter
+  const scatterSeries=allTypes.map(type=>({
+    name:type, type:'scatter',
+    data:(typeGroups[type]||[]).map(r=>({name:r.facility,value:[r.util,r.pue,r.mw]})),
+    symbolSize:d=>Math.max(7,Math.sqrt(d[2])*2.4),
+    itemStyle:{color:TCOLS[type],opacity:0.82},
+    emphasis:{itemStyle:{opacity:1}},
+  }));
+  charts['chart-scatter'].setOption({...BASE,
+    legend:{data:allTypes,textStyle:{color:'#8ba4be',fontSize:10},top:0,right:0,icon:'circle'},
+    grid:{left:8,right:8,top:28,bottom:36,containLabel:true},
+    xAxis:{name:'Utilization %',nameTextStyle:{color:'#4d6a82',fontSize:10},type:'value',min:50,max:90,
+      axisLabel:{color:'#4d6a82',fontSize:9,formatter:v=>v+'%'},splitLine:{lineStyle:{color:'#1e2d3e',type:'dashed'}},axisLine:{show:false}},
+    yAxis:{name:'PUE',nameTextStyle:{color:'#4d6a82',fontSize:10},type:'value',min:1.0,max:1.6,
+      axisLabel:{color:'#4d6a82',fontSize:9},splitLine:{lineStyle:{color:'#1e2d3e',type:'dashed'}},axisLine:{show:false}},
+    tooltip:{formatter:p=>`<b>${p.data.name}</b><br/>PUE: <b>${p.data.value[1]}</b>&nbsp;&nbsp;Util: <b>${p.data.value[0]}%</b><br/>Power: <b>${p.data.value[2]} MW</b>`},
+    series:scatterSeries,
+  },{replaceMerge:['series']});
+
+  // ARCH STACKED
+  const provMap={};
+  rows.forEach(r=>{if(!provMap[r.provider])provMap[r.provider]={intel:r.intel,amd:r.amd,arm:r.arm};});
+  const provs=Object.keys(provMap);
+  charts['chart-arch'].setOption({...BASE,
+    legend:{data:['Intel','AMD','ARM'],textStyle:{color:'#8ba4be',fontSize:10},top:0,right:0},
+    grid:{left:8,right:80,top:28,bottom:60,containLabel:true},
+    xAxis:{type:'category',data:provs,axisLabel:{color:'#4d6a82',fontSize:9,rotate:38,interval:0},
+      axisLine:{lineStyle:{color:'#1e2d3e'}},axisTick:{show:false}},
+    yAxis:{type:'value',max:100,axisLabel:{color:'#4d6a82',fontSize:9,formatter:v=>v+'%'},
+      splitLine:{lineStyle:{color:'#1e2d3e',type:'dashed'}},axisLine:{show:false}},
+    tooltip:{trigger:'axis',axisPointer:{type:'shadow'},formatter:params=>{
+      const prov=params[0]?.axisValue;
+      const pv=provMap[prov];
+      return pv?`<b>${prov}</b><br/>Intel: ${pv.intel}% · AMD: ${pv.amd}% · ARM: ${pv.arm}%`:'';
+    }},
+    series:[
+      {name:'Intel',type:'bar',stack:'a',data:provs.map(p=>provMap[p].intel),itemStyle:{color:'#4d9de0'},barMaxWidth:30},
+      {name:'AMD',  type:'bar',stack:'a',data:provs.map(p=>provMap[p].amd), itemStyle:{color:'#cf7a3d'}},
+      {name:'ARM',  type:'bar',stack:'a',data:provs.map(p=>provMap[p].arm), itemStyle:{color:'#3da85c',borderRadius:[3,3,0,0]}},
+    ],
+  },{replaceMerge:['series','xAxis']});
+
+  // CPU BAR
+  const cs=[...rows].sort((a,b)=>b.cpuPt-a.cpuPt);
+  const cpuLabels=cs.map(r=>{
+    const prov=r.provider.split(' ')[0];
+    const loc=(r.facility.split('—')[1]||'').trim().split(',')[0].trim().split(' ').slice(0,2).join(' ');
+    return prov+'\n'+loc;
+  });
+  charts['chart-cpu'].setOption({...BASE,
+    grid:{left:8,right:8,top:8,bottom:72,containLabel:true},
+    xAxis:{type:'category',data:cpuLabels,
+      axisLabel:{color:'#4d6a82',fontSize:8,interval:0,rotate:45,overflow:'truncate',width:60},
+      axisLine:{lineStyle:{color:'#1e2d3e'}},axisTick:{show:false}},
+    yAxis:{type:'value',axisLabel:{color:'#4d6a82',fontSize:9,formatter:v=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?Math.round(v/1e3)+'K':v},
+      splitLine:{lineStyle:{color:'#1e2d3e',type:'dashed'}},axisLine:{show:false}},
+    tooltip:{formatter:p=>`<b>${cs[p.dataIndex].facility}</b><br/>CPU Est: <b>${cs[p.dataIndex].cpuPt.toLocaleString()}</b><br/>Range: ${cs[p.dataIndex].cpuLo.toLocaleString()} – ${cs[p.dataIndex].cpuHi.toLocaleString()}<br/>Type: ${cs[p.dataIndex].type}`},
+    series:[{type:'bar',data:cs.map(r=>({value:r.cpuPt,itemStyle:{color:TCOLS[r.type]||'#6ea8d4',borderRadius:[3,3,0,0]}})),barMaxWidth:28}],
+  },{replaceMerge:['series']});
+}
+
+// ===== AG GRID =====
+function initGrid(){
+  const cols=[
+    {field:'facility',headerName:'Facility',flex:2,minWidth:200,sortable:true,
+      cellStyle:{color:'#e8f0f8',fontWeight:500}},
+    {field:'mw',headerName:'Facility MW',width:120,sortable:true,
+      cellStyle:{fontFamily:"'Space Mono',monospace",color:'#4d9de0',textAlign:'right'},
+      valueFormatter:p=>p.value.toLocaleString()+' MW'},
+    {field:'pue',headerName:'PUE',width:90,sortable:true,
+      cellStyle:{fontFamily:"'Space Mono',monospace",textAlign:'right'},
+      cellClassRules:{'green-cell':p=>p.value<=1.15,'yellow-cell':p=>p.value>1.15&&p.value<=1.35,'red-cell':p=>p.value>1.35}},
+    {field:'util',headerName:'Util %',width:85,sortable:true,
+      cellStyle:{fontFamily:"'Space Mono',monospace",color:'#8ba4be',textAlign:'right'},
+      valueFormatter:p=>p.value+'%'},
+    {field:'type',headerName:'DC Type',width:130,sortable:true,
+      cellRenderer:p=>{const cls=p.value==='GPU-Centric'?'gpu':p.value==='CPU-Heavy'?'chv':'cpu';return `<span class="type-badge ${cls}">${p.value}</span>`;}},
+    {field:'cpuPt',headerName:'CPU Sockets (Est)',width:150,sortable:true,
+      cellStyle:{fontFamily:"'Space Mono',monospace",color:'#3dbfa0',textAlign:'right'},
+      valueFormatter:p=>p.value.toLocaleString()},
+    {field:'arm',headerName:'ARM %',width:85,sortable:true,
+      cellStyle:{fontFamily:"'Space Mono',monospace",color:'#3da85c',textAlign:'right'},
+      valueFormatter:p=>p.value+'%'},
+    {field:'intel',headerName:'Intel %',width:85,sortable:true,
+      cellStyle:{fontFamily:"'Space Mono',monospace",color:'#4d9de0',textAlign:'right'},
+      valueFormatter:p=>p.value+'%'},
+    {field:'amd',headerName:'AMD %',width:85,sortable:true,
+      cellStyle:{fontFamily:"'Space Mono',monospace",color:'#cf7a3d',textAlign:'right'},
+      valueFormatter:p=>p.value+'%'},
+  ];
+  agGrid.createGrid(document.getElementById('myGrid'),{
+    columnDefs:cols,rowData:ROWS,
+    defaultColDef:{resizable:true,suppressHeaderMenuButton:true,suppressMovable:true},
+    rowSelection:'single',animateRows:true,
+    suppressColumnMenus:true,
+    onGridReady:p=>{gridApi=p.api;updateCount();},
+    onFilterChanged:()=>setTimeout(updateCount,50),
+    getRowStyle:p=>({borderLeft:`2px solid ${p.data.type==='GPU-Centric'?'rgba(139,92,246,0.4)':p.data.type==='CPU-Heavy'?'rgba(245,158,11,0.4)':'transparent'}`}),
+  });
+}
+
+function updateCount(){
+  if(gridApi) document.getElementById('grid-count').textContent=gridApi.getDisplayedRowCount();
+}
+
+// ===== FILTERS =====
+function setFilter(type,el){
+  currentFilter=type;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active','gpu-active','cpu-active','chv-active'));
+  el.classList.add(type==='GPU-Centric'?'gpu-active':type==='CPU-Mix'?'cpu-active':type==='CPU-Heavy'?'chv-active':'active');
+  refresh();
+}
+function doSearch(val){
+  currentSearch=val;
+  if(gridApi){
+    try{ gridApi.setGridOption('quickFilterText',val); }
+    catch(e){ try{ gridApi.updateGridOptions({quickFilterText:val}); }catch(e2){} }
+    setTimeout(updateCount, 50);
+  }
+  refresh();
+}
+function refresh(){const r=getRows();updateKPIs(r);renderCharts(r);}
+function exportCSV(){if(gridApi)gridApi.exportDataAsCsv({fileName:'dc_fleet_data.csv'});}
+
+// ===== INIT =====
+window.addEventListener('DOMContentLoaded',()=>{
+  initCharts();
+  initGrid();
+  updateKPIs(ROWS);
+  renderCharts(ROWS);
+});
+</script>
+</body>
+</html>
