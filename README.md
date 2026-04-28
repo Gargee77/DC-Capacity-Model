@@ -40,6 +40,6 @@ Gargee Nimdeo: Data and BI Engineering · [LinkedIn](https://linkedin.com/in/gar
 
 KG Sriram: Product Marketing Manager · [LinkedIn](https://www.linkedin.com/in/kg-sriram/) · [GitHub](https://github.com/kgs222)
 
-Sandeep Vangara: Supply Chain Manager · [LinkedIn](https://www.linkedin.com/in/sandeepvangara/) · [GitHub](https://github.com/lordSauron1710)
+Sandeep Vangara: Global Supply Manager · [LinkedIn](https://www.linkedin.com/in/sandeepvangara/) · [GitHub](https://github.com/lordSauron1710)
 
 *Data sourced from public filings, sustainability reports, and press releases. CPU estimates carry a ±25% range. This is an estimation exercise, not an audit.*
