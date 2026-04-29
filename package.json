@@ -1,0 +1,21 @@
+{
+  "name": "dc-capacity-model",
+  "version": "1.0.0",
+  "description": "Dark Capacity: DC CPU Estimator - A data center capacity modeling tool",
+  "type": "module",
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "echo 'Static site - no build needed'",
+    "lint": "echo 'No linter configured'"
+  },
+  "keywords": [
+    "data-center",
+    "capacity-planning",
+    "cpu-estimator"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
+  }
+}
