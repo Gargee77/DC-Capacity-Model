@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/dc",
+      "destination": "https://darkcapacity.gargeenimdeo.com",
+      "permanent": true
+    }
+  ]
+}
