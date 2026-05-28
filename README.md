@@ -30,6 +30,10 @@ TDP assumptions: Intel Sapphire Rapids: 300W, AMD EPYC Genoa: 320W, ARM (Gravito
 
 Utilization: 85% for hyperscalers, lower for colocation and telco facilities, based on industry benchmarks.
 
+## CPU Fleet Forecast: 2025–2030
+
+The site includes a forward-looking forecast built from each provider's reported or guided CapEx (SEC filings and earnings calls). GPU share of server spend rises from ~40% (2024) to ~65% (2030) per Dell'Oro Group and Goldman Sachs estimates. CPU budget is extracted from the remaining non-GPU server spend after removing facility, networking, and memory allocation. Interactive per-provider forecasts available on the site.
+
 # Validation
 
 We modeled Google The Dalles B1 in [dc-simulator-omega.vercel.app](https://dc-simulator-omega.vercel.app): 8 halls, 3,336 racks, 30 kW/rack, Hyperscale profile. Simulator output: 122.08 MW. Our model estimate: 120 MW. Delta: 1.7%.
